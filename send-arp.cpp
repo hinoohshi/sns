@@ -168,6 +168,7 @@ int main(int argc, char* argv[]) {
             printf("[-] Failed to get sender MAC: %s\n", std::string(senderIp).c_str());
             continue;
         }
+        printf("[+] Victim MAC: %s\n", std::string(senderMac).c_str());
 
         if (sendArpSpoof(pcap, targetIp, senderMac, senderIp))
             printf("[+] Spoofed ARP reply sent to %s\n", std::string(senderIp).c_str());
