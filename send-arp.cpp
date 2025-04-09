@@ -65,27 +65,31 @@ bool getMyInfo(char* ifname) {
 }
 
 bool getVictimMac(pcap_t* pcap, Mac& sender_mac, Ip sender_ip) {
-    uint8_t packet[42];
-    EthHdr* eth = (EthHdr*)packet;
-    ArpHdr* arp = (ArpHdr*)(packet + sizeof(EthHdr));
+    time_t start = time(nullptr);
+    EthArpPacket packet;
 
-    eth->dmac_ = Mac("ff:ff:ff:ff:ff:ff");
-    eth->smac_ = myMac;
-    eth->type_ = htons(EthHdr::Arp);
+    packet.eth_.dmac_ = Mac("ff:ff:ff:ff:ff:ff");
+    packet.eth_.smac_ = myMac;
+    packet.eth_.type_ = htons(EthHdr::Arp);
 
-    arp->hrd_ = htons(ArpHdr::ETHER);
-    arp->pro_ = htons(EthHdr::Ip4);
-    arp->hln_ = 6; // MAC address length
-    arp->pln_ = 4; // IP address length
-    arp->op_  = htons(ArpHdr::Request);
-    arp->smac_ = myMac;
-    arp->sip_  = htonl(myIP);
-    arp->tmac_ = Mac("00:00:00:00:00:00");
-    arp->tip_  = htonl(sender_ip);
+    packet.arp_.hrd_ = htons(ArpHdr::ETHER);
+    packet.arp_.pro_ = htons(EthHdr::Ip4);
+    packet.arp_.hln_ = 6; // Mac address
+    packet.arp_.pln_ = 4; // Ip address
+    packet.arp_.op_  = htons(ArpHdr::Request);
+    packet.arp_.smac_ = myMac;
+    packet.arp_.sip_  = htonl(myIP);
+    packet.arp_.tmac_ = Mac("00:00:00:00:00:00");
+    packet.arp_.tip_  = htonl(sender_ip);
 
-    pcap_sendpacket(pcap, packet, sizeof(packet));
+    pcap_sendpacket(pcap, reinterpret_cast<const u_char*>(&packet), sizeof(EthArpPacket));
 
     while (true) {
+        if (time(nullptr) - start > 5) {
+            fprintf(stderr, "[-] Timeout: no ARP reply received from %s\n", std::string(sender_ip).c_str());
+            return false;
+        }
+
         struct pcap_pkthdr* header;
         const u_char* recv_packet;
         int res = pcap_next_ex(pcap, &header, &recv_packet);
