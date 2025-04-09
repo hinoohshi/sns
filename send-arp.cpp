@@ -74,8 +74,8 @@ bool getVictimMac(pcap_t* pcap, Mac& sender_mac, Ip sender_ip) {
 
     packet.arp_.hrd_ = htons(ArpHdr::ETHER);
     packet.arp_.pro_ = htons(EthHdr::Ip4);
-    packet.arp_.hln_ = 6; // Mac address
-    packet.arp_.pln_ = 4; // Ip address
+    packet.arp_.hln_ = Mac::Size;
+    packet.arp_.pln_ = Ip::Size;
     packet.arp_.op_  = htons(ArpHdr::Request);
     packet.arp_.smac_ = myMac;
     packet.arp_.sip_  = htonl(myIP);
@@ -119,8 +119,8 @@ bool sendArpSpoof(pcap_t* pcap, Ip targetIp, Mac victimMac, Ip victimIp) {
 
     packet.arp_.hrd_ = htons(ArpHdr::ETHER);
     packet.arp_.pro_ = htons(EthHdr::Ip4);
-    packet.arp_.hln_ = 6;
-    packet.arp_.pln_ = 4;
+    packet.arp_.hln_ = Mac::Size;
+    packet.arp_.pln_ = Ip::Size;
     packet.arp_.op_  = htons(ArpHdr::Reply);
     packet.arp_.smac_ = myMac;
     packet.arp_.sip_  = htonl(targetIp);
