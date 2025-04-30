@@ -47,7 +47,7 @@ bool getMyInfo(const char* ifname) {
     return true;
 }
 
-bool getSenderMac(pcap_t* pcap, Mac& sender_mac, Ip sender_ip) {
+bool getMac(pcap_t* pcap, Mac& mac, Ip ip) {
     time_t start = time(nullptr);
     EthArpPacket packet;
 
@@ -63,13 +63,13 @@ bool getSenderMac(pcap_t* pcap, Mac& sender_mac, Ip sender_ip) {
     packet.arp_.smac_ = myMac;
     packet.arp_.sip_  = htonl(myIp);
     packet.arp_.tmac_ = Mac("00:00:00:00:00:00");
-    packet.arp_.tip_  = htonl(sender_ip);
+    packet.arp_.tip_  = htonl(ip);
 
     pcap_sendpacket(pcap, reinterpret_cast<const u_char*>(&packet), sizeof(EthArpPacket));
 
     while (true) {
         if (time(nullptr) - start > 5) {
-            fprintf(stderr, "[-] Timeout: no ARP reply received from %s\n", std::string(sender_ip).c_str());
+            fprintf(stderr, "[-] Timeout: no ARP reply received from %s\n", std::string(ip).c_str());
             return false;
         }
 
@@ -84,9 +84,9 @@ bool getSenderMac(pcap_t* pcap, Mac& sender_mac, Ip sender_ip) {
 
         ArpHdr* r_arp = (ArpHdr*)(recv_packet + sizeof(EthHdr));
         if (ntohs(r_arp->op_) != ArpHdr::Reply) continue;
-        if (r_arp->sip() != sender_ip) continue;
+        if (r_arp->sip() != ip) continue;
 
-        sender_mac = r_arp->smac();
+        mac = r_arp->smac();
         return true;
     }
 

