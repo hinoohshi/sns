@@ -4,7 +4,7 @@ all: arp-spoof
 
 main.o: mac.h ip.h ethhdr.h arphdr.h arp-spoof.h main.cpp
 
-send-arp.o: mac.h ip.h ethhdr.h arphdr.h arp-spoof.cpp
+arp-spoof.o: mac.h ip.h ethhdr.h arphdr.h arp-spoof.cpp
 
 arphdr.o: mac.h ip.h arphdr.h arphdr.cpp
 
