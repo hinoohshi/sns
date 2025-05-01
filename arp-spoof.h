@@ -1,15 +1,14 @@
 #pragma once
 
-#include <pcap.h>
 #include <vector>
-#include <string>
+#include <pcap.h>
 #include "mac.h"
 #include "ip.h"
 #include "ethhdr.h"
 #include "arphdr.h"
 
 #pragma pack(push, 1)
-struct EthArpPacket {
+struct EthArpPacket final {
     EthHdr eth_;
     ArpHdr arp_;
 };
@@ -22,18 +21,14 @@ struct SpoofPair {
     Mac targetMac;
 };
 
-struct FlowContext {
-    SpoofPair spoofpair;
-    pcap_t* pcap;
-};
-
 extern Mac myMac;
 extern Ip myIp;
 extern pcap_t* pcap;
 extern std::vector<SpoofPair> spoofpairs;
 
-bool getMyInfo(const char* dev);
+bool getMyInfo(const char* ifname);
 bool getMac(pcap_t* pcap, Mac& mac, Ip ip);
-bool sendArpSpoof(const SpoofPair& pair);
-void* spoofThread(void* arg);
-void* relayThread(void* arg);
+bool sendArpSpoof(const SpoofPair& spoofpair);
+void relayPacket(const u_char* packet, int packetLen);
+void* infectThread(void* arg);
+void detectRecoverAndReinfect(const u_char* packet, int packetLen);
