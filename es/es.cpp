@@ -94,8 +94,11 @@ int main(int argc, char* argv[]) {
 
     int port = atoi(argv[1]);
     if (argc >= 3) {
-        if (strchr(argv[2], 'e')) echo_mode = true;
-        if (strchr(argv[2], 'b')) broadcast_mode = true;
+        for (int i = 2; i < argc; i++) {
+            if (strchr(argv[i], 'e')) echo_mode = true;
+            if (strchr(argv[i], 'b')) broadcast_mode = true;
+        }
+        if (broadcast_mode == true) printf("broadcast mode\n");
     }
 
 #ifdef WIN32
