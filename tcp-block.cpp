@@ -203,7 +203,7 @@ int main(int argc, char* argv[]) {
         int data_len = ntohs(iphdr->ip_len) - iphdr_len - tcphdr_len;
         if (data_len <= 0) continue;
 
-        if (strncmp(data, "GET", 3) == 0 && memmem(data, data_len, pattern, strlen(pattern)) != NULL) {
+        if (memmem(data, data_len, pattern, strlen(pattern)) != NULL) {
             cout << "[+] Pattern matched. Sending block packets..." << endl;
             send_backward_fin(iphdr, tcphdr, data_len);
             send_forward_rst(handle, packet, iphdr, tcphdr, data_len, (uint8_t*)attacker_mac);
