@@ -17,6 +17,7 @@ using namespace std;
 #define HTTP_REDIRECT_MSG "HTTP/1.0 302 Redirect\r\nLocation: http://warning.or.kr\r\n\r\n"
 
 Mac attacker_mac;
+int sd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
 
 unsigned short checksum(unsigned short* buffer, int size) {
     unsigned long cksum = 0;
@@ -118,7 +119,6 @@ void send_backward_fin(struct libnet_ipv4_hdr* iphdr, struct libnet_tcp_hdr* tcp
     tcp->th_sum = 0;
     tcp->th_sum = checksum((unsigned short*)pseudo, 12 + tcp_len + payload_len);
 
-    int sd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
     int opt = 1;
     setsockopt(sd, IPPROTO_IP, IP_HDRINCL, &opt, sizeof(opt));
 
@@ -162,7 +162,7 @@ int main(int argc, char* argv[]) {
     char* dev = argv[1];
     const char* pattern = argv[2];
     char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t* handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
+    pcap_t* handle = pcap_open_live(dev, BUFSIZ, 1, 1, errbuf);
     if (handle == nullptr) {
         cerr << "pcap_open_live failed: " << errbuf << endl;
         return -1;
