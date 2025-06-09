@@ -18,7 +18,7 @@
 
 struct TlsRecordHeader {
     uint8_t content_type;   // 0x16 = Handshake
-    uint16_t version;       // TLS version (e.g. 0x0301 ~ 0x0304)
+    uint16_t version;       // 0x301 = TLS version
     uint16_t length;        // Length of TLS payload
 };
 

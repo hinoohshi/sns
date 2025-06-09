@@ -224,10 +224,6 @@ int main(int argc, char* argv[]) {
         if (data_len <= static_cast<int>(sizeof(TlsRecordHeader) + sizeof(TlsHandshakeHeader))) continue;
 
         Key key{iphdr->ip_src.s_addr, ntohs(tcphdr->th_sport), iphdr->ip_dst.s_addr, ntohs(tcphdr->th_dport)};
-        //char src_ip[INET_ADDRSTRLEN], dst_ip[INET_ADDRSTRLEN];
-        //inet_ntop(AF_INET, &iphdr->ip_src, src_ip, sizeof(src_ip));
-        //inet_ntop(AF_INET, &iphdr->ip_dst, dst_ip, sizeof(dst_ip));
-        //printf("[*] Connection: %s:%d -> %s:%d\n", src_ip, ntohs(tcphdr->th_sport), dst_ip, ntohs(tcphdr->th_dport));
 
         segment_map[key] += string(data, data_len);
         string& total_data = segment_map[key];
@@ -237,6 +233,8 @@ int main(int argc, char* argv[]) {
 
         const TlsHandshakeHeader* handshake = reinterpret_cast<const TlsHandshakeHeader*>(total_data.data() + sizeof(TlsRecordHeader));
         if (handshake->handshake_type != 0x01) continue;
+
+        printf("\n[+] Client Hello Handshake Packet captured\n");
 
         const char* sni = extract_sni((const uint8_t*)total_data.data(), total_data.size());
         if (!sni) {
